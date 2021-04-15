@@ -1,14 +1,759 @@
+<!--
+https://blog.maxkit.com.tw/2016/06/d3js.html
+https://mapshaper.org/
+
+政府資料開放平臺
+村里界圖(TWD97_121分帶)   https://data.gov.tw/dataset/7440
+鄉鎮市區界線(TWD97經緯度)    https://data.gov.tw/dataset/7441
+直轄市、縣市界線(TWD97經緯度)  https://data.gov.tw/dataset/7442
+-->
 <!DOCTYPE html>
-<html lang="zh-Hant-TW">
-  <head>
-    <meta charset="utf-8">
-    <title>D3 Page Template</title>
-    <script src="http://d3js.org/d3.v6.min.js" charset="utf-8"></script> <!-- v6.5.0 -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="description" content="" />
+<meta name="keywords" content="" />
+<meta name="author" content="" />
+<meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<title>如何用 D3.js 繪製地圖</title>
+
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@900&display=swap');
+
+h1 {
+    background-color: rgba(255, 255, 0, 0.1);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 24pt;
+    border: solid 1px black;
+    margin: 5px auto;
+    padding: 10px;
+}
+
+h3 {
+    background-color: rgba(255, 255, 0, 0.1);
+    color: white; 
+    text-shadow: 0 0 6px #FF0000, 0 0 6px #000000;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18pt;
+    border: solid 1px black;
+    padding: 10px;
+    margin: 5px auto;
+}
+
+ul, ol {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 12pt;
+    border: solid 1px black;
+    margin: 5px auto;
+    padding: 10px 10px 10px 30px;
+}
+
+body {
+    background-color: #cceeff;
+}
+
+.subunit-boundary {
+    fill: none;
+    stroke: #fff;
+    stroke-dasharray: 5, 0;
+    stroke-linejoin: round;
+}
+
+#panel {
+    position: absolute;
+    z-index: 99;
+    height: 20px;
+    width: 60px;
+    background-color: #fff;
+    -webkit-transition: all .1s;
+    border-radius: 5px;
+    background-color: #000;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    padding: 10px;
+}
+
+.svgback {
+    background-color: #ffffff;
+}
+
+svg {
+    border: 1px solid black;
+    margin: 10px auto;
+}
+
+</style>
+
 </head>
 <body>
-    <script type="text/javascript">
-      // Your beautiful D3 code will go here
-    </script>
-  </body>
+
+<h1>lab04 使用 D3.v3.js 繪製地圖</h1>
+
+<div id='panel' style="display: none">
+    <span id='title'></span><br />
+</div>
+
+<div id="canvas"></div>
+
+<h3>
+    參考: 
+</h3>
+
+<ul>
+    <li><a href="https://blog.maxkit.com.tw/2016/06/d3js.html">如何用 D3.js 繪製地圖</a></li>
+    <li><a href="https://ithelp.ithome.com.tw/articles/10223786?sc=pt">[ D3.js ] 繪製臺灣地圖</a></li>
+    <li>佳魁資訊 <a href="https://www.tenlong.com.tw/products/9789863797159">AI 時代在網頁上資料視覺化：D3.js 實作寶典</a></li>
+</ul>
+
+<h3>
+    GeoJSON vs. TopoJSON
+</h3>
+
+<ul>
+    <li>地圖資料一般儲存為 JSON 格式。 D3 常用的有二種: <a href="https://zh.wikipedia.org/wiki/GeoJSON">GeoJSON</a> 與 <a href="https://github.com/topojson/">TopoJSON</a>，皆符合 JSON 的標準。</li>
+</ul>
+
+<h3>
+    GeoJSON
+</h3>
+<ul>
+    <li><a href="https://tools.ietf.org/html/rfc7946">The GeoJSON Format</a></li>
+    <li>GeoJSON 就是 JSON 格式的檔案，並非是一種新的格式。 GeoJSON 只是將地理訊息描述，以 JSON 規則呈現，並受嚴格的定義控管。</li>
+    <li>GeoJSON 是描述地理資訊的一種基本格式。</li>
+    <li>
+        GeoJSON 之幾何物件(Geometry Object)包括: 
+        <ul>
+            <li>點（表示地理位置）</li>
+            <li>線（表示街道、公路、邊界）</li>
+            <li>多邊形（表示國家、省、領土）</li>
+        </ul> 
+    </li>
+    <li>GeoJSON <a href="http://geojson.io/">線上編輯器</a> http://geojson.io/</li>
+    <li>GeoJSON 最外層是一個單獨的物件(object)，這個物件可以是以下<a href="https://tools.ietf.org/html/rfc7946">三種物件</a>:
+        <ul>
+            <li>
+                Geometry Object. 
+                <ul>
+                    GeoJSON supports the following geometry types:
+                    <li>
+                        Point 
+                        <ul>
+                            <textarea rows="5" cols="50" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+    "type": "Point",
+    "coordinates": [-105, 39]
+}
+                            </textarea>
+                        </ul>
+                    </li>
+                    <li>MultiPoint  </li>
+                    <li>
+                        LineString 
+                        <ul>
+                            <textarea rows="5" cols="50" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+    "type": "LineString",
+    "coordinates": [[-105, 39], [-107, 38]]
+}
+                            </textarea>
+                        </ul>
+                    </li>
+                    <li>MultiLineString </li>
+                    <li>
+                        Polygon 
+                        <ul>
+                            <textarea rows="5" cols="80" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+    "type": "Polygon",
+    "coordinates": [[  [30, 0], [31, 0], [31, 5], [30, 5], [30, 0]  ]]
+}
+                            </textarea>
+                        </ul>
+                    </li>
+                    <li>MultiPolygon  </li>
+                    <li>
+                        GeometryCollection 
+                       <ul>
+                            <textarea rows="15" cols="80" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+    "type": "GeometryCollection",
+    "geometries": [
+        {
+            "type": "Point",
+            "coordinates": [100, 40]
+        },
+        {
+            "type": "LineString",
+            "coordinates": [[100, 30], [100, 35]]
+        }
+    ]
+}
+                            </textarea>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                Feature
+                <ul>
+                    Features in GeoJSON contain a Geometry object and additional properties
+
+                    <textarea rows="15" cols="100" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+  "type": "Feature",
+  "properties": {
+    "name": "天母棒球場"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      121.53337955474854,
+      25.11366277845836
+    ]
+  }
+}
+                    </textarea>
+                </ul>
+            </li>
+            <li>
+                FeatureCollection
+                 <ul>
+                 FeatureCollection in GeoJSON contains a list of Features.
+                   <textarea rows="22" cols="100" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"id": 1, "name": "天母棒球場"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [121.53337955474854, 25.11366277845836]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"id": 1, "name": "新莊棒球場"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [121.53337955474854, 25.11366277845836]
+      }
+    }
+  ]
+}
+                    </textarea>
+
+                </ul>
+           </li>
+        </ul>
+    </li>
+</ul>
+
+
+
+<h3>
+    TopoJSON
+</h3>
+
+<ul>
+    <li>TopoJSON 是由 D3.js 的作者 <a href="https://bost.ocks.org/mike/">Mike Bostock</a>制定的格式。</li>
+    <li>TopoJSON is an extension of GeoJSON that encodes topology.</li>
+    <li>TopoJSON 中的每個幾何體，都是透過共用邊(arcs)整合後組成的。 </li>
+    <li>比如說: 台北市與台北縣的邊界縣，只記錄一次。</li>
+    <li>地理座標使用整數，不使用浮點數。</li>
+    <li>TopoJSON 檔案大小約為 GeoJSON 的 20%.</li>
+    <li>
+        <ul>
+                            <textarea rows="5" cols="50" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+{
+    "type": "Topology",
+    "transforms": {
+        "scale": [0.03, 0.01],
+        "translate": [-180, -89]
+
+    },
+    "object": {
+        "台北": {
+            "type": "Polygon",
+            "arcs": [[0]],
+            "id": 533
+        }
+    },
+    "arcs": [[  [3058, 5901], [0, -2], [-2 1]  ]]
+}
+                            </textarea>
+        </ul>
+    </li>
+ </ul>
+
+<h3>
+    取得地圖資料 | 政府資料開放平臺 | Natural Earth
+</h3>
+
+<ul>
+    政府資料開放平臺，提供三種行政區域圖資：
+    <li>7440 <a href="https://data.gov.tw/dataset/7440">村里界圖(TWD97_121分帶)</a></li>
+    <li>7441 <a href="https://data.gov.tw/dataset/7441">鄉鎮市區界線(TWD97經緯度)</a></li>
+    <li>7442 <a href="https://data.gov.tw/dataset/7442">直轄市、縣市界線(TWD97經緯度)</a></li>
+</ul>
+<ul>
+    <li>圖資格式為 ESRI <a href="https://zh.wikipedia.org/wiki/Shapefile#Shapefile.E5.9B.BE.E5.BD.A2.E6.A0.BC.E5.BC.8F_.28.shp.29"> Shapefile </a>（shp），簡稱 shapefile。</li>
+    <li>由美國<u>環境系統研究所公司</u>（ESRI）開發，成為地理訊息軟體界的開放標準，在<u>地理訊息系統</u>全球市場佔有一席之地。</li>
+</ul>
+<ul>
+    <li><a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/">naturalearthdata.com</a> Admin 1 – States, Provinces</li>
+</ul>
+
+<h3>
+    將 SHP 轉成 TopoJSON
+</h3>
+
+<ul>
+    <li><a href="https://bost.ocks.org/mike/">Mike Bostock</a> 在 Github 上提供 NodeJS <a href="https://github.com/topojson/topojson">topojson</a> 程式，可以讀取 SHP 檔，並輸出成 GeoJSON 格式，或是直接由 SHP 檔產生 TopoJSON 檔。</li>
+    <li>下載 <a href="https://github.com/zer0infinity/OGR2GUI/releases">OGR2GUI</a> 轉檔工具。 </li>
+    <li>線上轉檔。透過 <a href="https://mapshaper.org/"> mapshaper </a>網站，將下載好的 SHP 檔案轉成給 D3.js 用的 GeoJson 格式（或 TopoJson 格式）。</li>
+</ul>
+
+
+<h3>
+    製作網頁。
+</h3>
+
+<ul>
+    <li>先準備一個 web server，隨便一種 server 都可以。</li>
+    <li>製作 index.html</li>
+    <li>include 需要的 js 檔案:
+        <ul>
+            <li>d3.v3.min.js</li>
+            <li>topojson.v1.min.js</li>
+            <li>jquery 1.12.0</li>
+        </ul> 
+        
+    </li>
+    <li>把剛剛的 taiwan.json 以及 index.html 放在 webserver 的同一個目錄中。</li>
+</ul>
+
+<h3>
+    撰寫 D3.js 程式碼。
+</h3>
+
+<ul>
+    <li>使用文字編輯器如 Sublime Text 打開 taiwan.json，找到 taiwan.json 中，描述路徑的名稱(地圖版本日期) COUNTY_MOI_1090820。</li>
+    <li>找到程式碼的這一行 topology.objects["County_MOI_1041215"], 按照(地圖版本日期)來修改程式碼 topology.objects["COUNTY_MOI_1090820"]。</li>
+</ul>
+
+<textarea rows="16" cols="100" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="description" content="" />
+<meta name="keywords" content="" />
+<meta name="author" content="" />
+<meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<title>test</title>
+
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+<style>
+body {
+    background-color: #cceeff;
+}
+
+.subunit-boundary {
+    fill: none;
+    stroke: #fff;
+    stroke-dasharray: 5, 0;
+    stroke-linejoin: round;
+}
+
+#panel {
+    position: absolute;
+    z-index: 99;
+    height: 20px;
+    width: 60px;
+    background-color: #fff;
+    -webkit-transition: all .1s;
+    border-radius: 5px;
+    background-color: #000;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    padding: 10px;
+}
+
+.svgback {
+    background-color: #ffffff;
+}
+</style>
+
+</head>
+<body>
+
+<div id='panel' style="display: none">
+    <span id='title'></span><br />
+</div>
+
+<script>
+
+var width = 800,
+    height = 600;
+var svg = d3.select("body").append("svg")
+    // .attr("class", "svgback")
+    .attr("width", width)
+    .attr("height", height);
+
+var projection = d3.geo.mercator()
+    .center([121,24])
+    .scale(6000);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+// load and display the World
+d3.json("taiwan.json", function(error, topology) {
+    var g = svg.append("g");
+    
+    // load and display the cities
+    d3.csv("cities.csv", function(error, data) {
+        g.selectAll("circle")
+           .data(data)
+           .enter()
+           .append("circle")
+           .attr("cx", function(d) {
+                   return projection([d.lon, d.lat])[0];
+           })
+           .attr("cy", function(d) {
+                   return projection([d.lon, d.lat])[1];
+           })
+           .attr("r", 5)
+           .style("fill", "red");
+    });
+    
+    // 縣市/行政區界線
+    d3.select("svg").append("path").datum(
+            topojson.mesh(topology,
+                    topology.objects["County_MOI_1041215"], function(a,
+                            b) {
+                        return a !== b;
+                    })).attr("d", path).attr("class","subunit-boundary");
+    
+    d3.select("g").selectAll("path")
+          .data(topojson.feature(topology, topology.objects.County_MOI_1041215).features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr({
+                d : path,
+                name : function(d) {
+                    return d.properties["C_Name"];
+                },
+                fill : '#55AA00'
+        });
+    
+    // 顯示滑鼠所指向的縣市/行政區
+    d3.select("svg").selectAll("path").on("mouseenter", function() {
+        // console.log(e);
+        fill = $(this).attr("fill");
+        $(this).attr("fill", '#00DD77');
+    
+        $('#title').html($(this).attr("name"));
+        $('#panel').css({
+            "height" : "20px",
+            "width" : "60px"
+        });
+    }).on("mouseout", function() {
+        $(this).attr("fill", fill);
+    });
+    
+    // panel 隨滑鼠移動
+    $("path").mouseover(function(e) {
+        if($('#panel').is(':visible')){
+            $('#panel').css({
+                'top' : e.pageY,
+                'left' : e.pageX
+            });
+        } else {
+            $('#panel').fadeIn('slow').fadeOut();
+        }
+    });
+
+});
+
+setInterval(function() {
+    d3.csv("cities2.csv", function(error, data) {
+        svg.select("g").selectAll("circle").remove();
+        
+        // new data joins old elements 'circle'
+        var update = svg.append("g").selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                return projection([d.lon, d.lat])[0];
+            })
+            .attr("cy", function(d) {
+                    return projection([d.lon, d.lat])[1];
+            })
+            .attr("r", 5)
+            .style("fill", "red");
+    });
+}, 2000);
+</script>
+
+</body>
 </html>
-  
+
+</textarea>
+
+
+<h3>
+    在地圖上標記城市(佈點)。
+</h3>
+<ul>準備多個 csv 檔案，放在同一個 web server 的目錄中。(只有用到經緯度的欄位，其他欄位沒有用到。)
+    <li>
+        <ol>
+            <li>cities1.csv 謝</li>
+            <li>cities2.csv 電資</li>
+            <li>cities3.csv 劉</li>
+            <li>cities4.csv 柯</li>
+            <li>cities5.csv 資工四</li>
+            <li>cities6.csv 陸</li>
+            <li>cities7.csv 吳</li>
+            <li>cities8.csv 江</li>
+            <li>cities9.csv 霖</li>
+            <li>cities10.csv 陳</li>
+            <li>cities11.csv 楊</li>
+            <li>cities12.csv 王</li>
+            <li>cities13.csv 白</li>
+            <li>cities14.csv 資</li>
+            <li>cities15.csv 鄭</li>
+        </ol>
+    </li>
+</ul>
+
+<textarea rows="8" cols="100" style="font-family:'Courier New'; background: rgba(256, 255, 128, 0.1);">
+
+code,city,country,lat,lon
+KHH,KAOHSIUNG,TAIWAN,22.630865,120.310047
+HUN,HUALIEN,TAIWAN,23.979337,121.595788
+KNH,KINMEN,TAIWAN,24.449047,118.375968
+MZG,MAKUNG,TAIWAN,23.567376,119.584375
+
+</textarea>
+
+
+
+<h3>
+    (佈點) 經度、緯度查詢 | GeoJSON 線上編輯器。
+</h3>
+<ul>
+    <a href="http://geojson.io/">geojson.io</a> "Draw a marker"
+</ul>
+
+
+<h3>
+    動態更新。
+</h3>
+
+<ul>
+以 setInterval 定時(每二秒鐘)更新城市圖點。
+</ul>
+
+
+<h3>
+    大功告成!
+</h3>
+
+
+<script>
+var width = 800,
+    height = 600;
+
+var svg = d3.select("#canvas").append("svg")
+    // .attr("class", "svgback")
+    .attr("width", width)
+    .attr("height", height);
+
+var projection = d3.geo.mercator()
+    .center([121,24])
+    .scale(9000);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+
+
+// load and display the World
+d3.json("taiwan.json", function(error, topology) {
+    var g = svg.append("g");
+    
+    // load and display the cities
+    d3.csv("cities1.csv", function(error, data) {
+        g.selectAll("circle")
+           .data(data)
+           .enter()
+           .append("circle")
+           .attr("cx", function(d) {
+                   return projection([d.lon, d.lat])[0];
+           })
+           .attr("cy", function(d) {
+                   return projection([d.lon, d.lat])[1];
+           })
+           .attr("r", 5)
+           .style("fill", "red");
+    });
+
+    svg.append('text').attr({
+        x: 64, y: 64
+    }).style({
+        fill: 'red',
+        'font-size': '42px'
+    }).text('cities1.csv');
+
+    
+    // 縣市/行政區界線
+    d3.select("svg").append("path").datum(
+            topojson.mesh(topology,
+                    topology.objects["COUNTY_MOI_1090820"], function(a, b) {
+                        return a !== b;
+                    })).attr("d", path).attr("class","subunit-boundary");
+    
+    d3.select("g").selectAll("path")
+          .data(topojson.feature(topology, topology.objects.COUNTY_MOI_1090820).features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr({
+                d : path,
+                name : function(d) {
+                    return d.properties["COUNTYNAME"];
+                },
+                fill : '#55AAFF'
+        });
+    
+    // 顯示滑鼠所指向的縣市/行政區
+    d3.select("svg").selectAll("path").on("mouseenter", function() {
+        // console.log(e);
+        fill = $(this).attr("fill");
+        $(this).attr("fill", '#00DD77');
+    
+        $('#title').html($(this).attr("name"));
+        $('#panel').css({
+            "height" : "20px",
+            "width" : "60px"
+        });
+    }).on("mouseout", function() {
+        $(this).attr("fill", fill);
+    });
+    
+    // panel 隨滑鼠移動
+    $("path").mouseover(function(e) {
+        if($('#panel').is(':visible')){
+            $('#panel').css({
+                'top' : e.pageY,
+                'left' : e.pageX
+            });
+        } else {
+            $('#panel').fadeIn('slow').fadeOut();
+        }
+    });
+
+});
+
+setInterval(function() {
+    d3.csv("cities2.csv", function(error, data) {
+        svg.selectAll("circle").remove();
+
+        svg.selectAll("text").remove();
+        svg.append('text').attr({
+            x: 64, y: 64
+        }).style({
+            fill: 'red',
+            'font-size': '42px'
+        }).text('cities2.csv');
+        
+        // new data joins old elements 'circle'
+        var update = svg.append("g").selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                return projection([d.lon, d.lat])[0];
+            })
+            .attr("cy", function(d) {
+                    return projection([d.lon, d.lat])[1];
+            })
+            .attr("r", 5)
+            .style("fill", "red");
+    });
+}, 2000);
+
+setInterval(function() {
+    d3.csv("cities3.csv", function(error, data) {
+        svg.selectAll("circle").remove();
+
+        svg.selectAll("text").remove();
+        svg.append('text').attr({
+            x: 64, y: 64
+        }).style({
+            fill: 'red',
+            'font-size': '42px'
+        }).text('cities3.csv');
+
+        // new data joins old elements 'circle'
+        var update = svg.append("g").selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                return projection([d.lon, d.lat])[0];
+            })
+            .attr("cy", function(d) {
+                    return projection([d.lon, d.lat])[1];
+            })
+            .attr("r", 5)
+            .style("fill", "red");
+    });
+}, 4000);
+
+setInterval(function() {
+    d3.csv("cities4.csv", function(error, data) {
+        svg.selectAll("circle").remove();
+
+        svg.selectAll("text").remove();
+        svg.append('text').attr({
+            x: 64, y: 64
+        }).style({
+            fill: 'red',
+            'font-size': '42px'
+        }).text('cities4.csv');
+
+        // new data joins old elements 'circle'
+        var update = svg.append("g").selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                return projection([d.lon, d.lat])[0];
+            })
+            .attr("cy", function(d) {
+                    return projection([d.lon, d.lat])[1];
+            })
+            .attr("r", 5)
+            .style("fill", "red");
+    });
+}, 6000);
+
+</script>
+
+</body>
+</html>
