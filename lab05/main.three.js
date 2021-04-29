@@ -6,6 +6,7 @@ function myThree(csv){
     var WIDTH = d3.select('#histogram').node().clientWidth;
 
     var scene = new THREE.Scene();
+    var clock = new THREE.Clock();
     var camera = new THREE.PerspectiveCamera(
         45,
         WIDTH / HEIGHT,
@@ -19,16 +20,41 @@ function myThree(csv){
     renderer.setClearColor(0xdddddd);
     renderer.setSize(WIDTH, HEIGHT);
 
+    var group = new THREE.Group();
+
     var basePosition = 0;
-    for(var i = 0 ; i < csv.length; i++){
+    var tracks = [];
+
+    
+
+    for(var i = 0 ; i< csv.length; i++){
         var boxGeometry = new THREE.BoxGeometry(1, 1, 1);
         boxGeometry.center();
         var boxMaterial = new THREE.MeshBasicMaterial({color: 0x0fdfc5});
         var box = new THREE.Mesh(boxGeometry, boxMaterial);
         box.scale.set(1, +csv[i].頻率+1, 1);
+
         box.position.set(basePosition + i * 1.5, (+csv[i].頻率+1) / 2 , 0);
-        scene.add(box); 
+        box.name = 'box' + i;
+
+        group.add(box);
+        
+
+        var times = [0,1];
+        var values = [1,1,1,1, +csv[i].頻率+1, 1];
+        var track = new THREE.KeyframeTrack('box' + i +  '.scale', times, values);
+        tracks.push(track);
     }
+
+    group.position.set(-20, -20, 10);
+    scene.add(group); 
+
+    var clip = new THREE.AnimationClip('scaleAnimation', 1, tracks);
+    var mixer = new THREE.AnimationMixer(group);
+    
+    var animation = mixer.clipAction(clip);
+
+
 
     var controls = new THREE.OrbitControls( camera, renderer.domElement );
     camera.position.set(0, 0, 60);
@@ -39,12 +65,20 @@ function myThree(csv){
     d3.select('#histogram')
         .node()
         .appendChild(renderer.domElement);
+
+    
     var renderScene = function(){
+        var delta = clock.getDelta();
+        mixer.update(delta);
         controls.update();
         renderer.render(scene, camera);
         window.animationReq = window.requestAnimationFrame(renderScene);
     }
+    setTimeout(function(){
+        animation.stop();
 
+    },1000)
+    animation.play();
     renderScene();
 }
 
@@ -106,9 +140,13 @@ window.onload = function(){
     
 
     d3.csv("data.csv", function(csv){
+        var sortedCsv = csv.sort(function(x, y){
+            return (+y.組界) - (+x.組界);
+        })
+
         var isD3 = true;
 
-        myD3(csv);
+        myD3(sortedCsv);
         document.getElementById("ckBtn").onclick = function(){
             d3.select("#histogram")
                 .html("");
@@ -118,9 +156,9 @@ window.onload = function(){
     
             if(!isD3){
                 d3.select("#ckBtn")
-                    .text("D3");
+                    .text("D3JS");
                 
-                myThree(csv)
+                myThree(sortedCsv)
             }
             else {
                 if(typeof window.animationReq != 'undefined'){
@@ -128,8 +166,8 @@ window.onload = function(){
                 }
 
                 d3.select("#ckBtn")
-                    .text("Three");
-                myD3(csv);
+                    .text("ThreeJS");
+                myD3(sortedCsv);
             }
         }
 
