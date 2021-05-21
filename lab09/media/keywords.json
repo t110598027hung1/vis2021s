@@ -1,0 +1,18 @@
+[
+    {
+        "text": "Dr.",
+        "effects": ["rotate,-50", "scale,1.5", "color,#fa8c8c"]
+    },
+    {
+        "text": "Dre",
+        "effects": ["rotate,-50", "scale,1.5", "color,#fa8c8c"]
+    },
+    {
+        "text": "still",
+        "effects": ["scale,1.5", "color,#e079f7", "decoration,underline", "weight,bold", "case,upper"]
+    },
+    {
+        "text": "Still",
+        "effects": ["scale,1.5", "color,#e079f7", "decoration,underline", "weight,bold", "case,upper"]
+    }
+]
