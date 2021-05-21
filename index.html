@@ -47,6 +47,10 @@
       iframe {
         border: 1px black solid;
       }
+	  
+	  #loading {
+		text-align: center;
+	  }
     </style>
 </head>
 <body>
@@ -69,6 +73,7 @@
       );
 
       cf.checkAvailable().then(function(result){
+		document.getElementById('loading').style.display = 'none';
         cf.inject();
 
       });
@@ -76,6 +81,8 @@
 
   </script>
 
-
+	<div id="loading">
+		Loading Content, please wait...
+	</div>
 </body>
 </html>
