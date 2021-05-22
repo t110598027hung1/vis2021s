@@ -1,58 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8">
+    <meta author="t109598105">
+    <title>作品集</title>
+  </head>
 
-<head>
-  <meta charset="utf-8">
-  <title>作品集</title>
-  
-</head>
-<body>
-
-  <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
-  <script src="./contentFetcher.min.js"></script>
-  <script>
-    window.onload = function () {
-      var cf = new ContentFetcher.contentFetcher(
-        [0, 14],
-        [
-          {
-            name: "lab 66: 期中計畫 Decision Tree Visualization",
-            numberOrder: "66"
-          },
-          {
-            name: "lab 99: 期末計畫  Choropleth Map 階級区分図",
-            numberOrder: "99"
-          }
-        ]
-      );
-
-      var presentationTagName = ContentFetcher.presentation.register();
-
-      cf.checkAvailable(function (loaded) {
-        
-      }).then(function () {
-        document.getElementById("loading").style.display = "none";
-        var checked = cf.checked;
-
-        for(var i = 0 ; i<checked.length; i++){
-          var presentation = document.createElement(presentationTagName);
-
-          
-          presentation.setAttribute("title-name", checked[i].name + ":");
-          presentation.setFrameInfo({
-            width: "100%",
-            height: 700,
-            src: "./lab" + checked[i].numberOrder + "/index.html"
-          });
-
-          document.body.appendChild(presentation);
-        }
-
-      });
-    }
-  </script>
-  <div id="loading">
-    Loading Content, please wait...
-  </div>
-</body>
+  <body>
+    <noscript> You must enable JavaScript to run this website </noscript>
+    <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    <script src="./contentFetcher.min.js"></script>
+    <script src="./mainsite.js"></script>
+  </body>
 </html>
