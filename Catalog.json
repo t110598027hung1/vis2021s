@@ -16,6 +16,10 @@
 		{
             "name": "Research: D3-Stack-BarChart",
             "numberOrder": "101"
+        },
+		{
+            "name": "Research: Taiwan COVID-19 Map",
+            "numberOrder": "102"
         }
     ]
 }
