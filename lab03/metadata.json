@@ -1,0 +1,5 @@
+{
+	"title": "Python Web Server",
+	"description": "Learn how to construct a web server by Python module \"http.server\".",
+	"ref": ["Python", "http.server"]
+}

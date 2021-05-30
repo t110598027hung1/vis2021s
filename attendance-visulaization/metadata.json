@@ -1,0 +1,5 @@
+{
+	"title": "D3 Attendance virtualization",
+	"description": "Virtualize the student attendance record by d3.js stacked and histogram layout.",
+	"ref": ["D3.js", "Stacked", "Histogram"]
+}

@@ -1,0 +1,5 @@
+{
+	"title": "D3 Choropleth-Map 階級区分図",
+	"description": "Draw Choropleth Map(階級区分図) of USA by D3.js.",
+	"ref": ["Choropleth-Map", "D3.js"]
+}

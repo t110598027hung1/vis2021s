@@ -8,18 +8,6 @@
         {
             "name": "lab 99: 期末計畫  Choropleth Map 階級区分図",
             "numberOrder": "99"
-        },
-        {
-            "name": "Research: D3-Band-Chart",
-            "numberOrder": "100"
-        },
-		{
-            "name": "Research: D3-Stack-BarChart",
-            "numberOrder": "101"
-        },
-		{
-            "name": "Research: Taiwan COVID-19 Map",
-            "numberOrder": "102"
         }
     ]
 }
