@@ -1,0 +1,5 @@
+{
+	"title": "HanZi Calligraphy",
+	"description": "Use SVG clip-path feature to draw hanzi with stroke order.",
+	"ref": ["jQuery", "ClipPath"]
+}
