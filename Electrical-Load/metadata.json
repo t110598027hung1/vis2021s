@@ -1,0 +1,5 @@
+{
+	"title": "Electrical Load",
+	"description": "Visualize the electrical load with D3 line chart and Three.js",
+	"ref": ["D3.js", "Three.js", "Line-Chart"]
+}
