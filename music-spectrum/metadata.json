@@ -1,5 +1,0 @@
-{
-	"title": "Music Visulaization",
-	"description": "Use D3 SVG path to Visualize the music spectrum",
-	"ref": ["D3.js", "Path", "Music"]
-}
