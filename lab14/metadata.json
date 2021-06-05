@@ -1,5 +1,5 @@
 {
 	"title": "Taiwan Map",
 	"description": "Use D3.js GeoPath and Mercator Projection to draw Taiwan Map.",
-	"ref": ["D3.js", "jQuery", "GeoPath", "Mercator"]
+	"ref": ["D3.js", "GeoPath", "Mercator"]
 }
