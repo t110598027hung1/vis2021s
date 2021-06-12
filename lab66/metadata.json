@@ -1,5 +1,5 @@
 {
-	"title": "Lab66",
+	"title": "Lab66 -- r2d3 BDT",
 	"description": "Use r2d3.js D3.js feature to visualize Binary Decision Tree trained by sklearn.",
 	"ref": ["D3.js", "BinaryDecisionTree", "sklearn"]
 }
